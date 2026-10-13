@@ -22,6 +22,6 @@ To enroll a lead that came in before this existed, POST its record ID to `/api/n
 - `DISCORD_PUBLIC_KEY`
 - `DISCORD_APP_ID`
 - `AIRTABLE_TOKEN` — secret (scopes: data.records:read, data.records:write; CVO Recruiting base)
-- `RESEND_API_KEY` — secret, for the nurture emails (needs to send and cancel; full access works)
+- `NURTURE_RESEND_API_KEY` — secret, full-access Resend key for the nurture emails (they're sent and cancelled)
 
 Server, channel, role, and Airtable IDs live in `lib/config.mjs`.
