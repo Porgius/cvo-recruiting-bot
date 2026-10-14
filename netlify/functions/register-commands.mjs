@@ -8,6 +8,7 @@ const COMMANDS = [
     name: "lead", description: "Look up a recruiting lead", type: 1,
     options: [{ type: 3, name: "name", description: "Part of the lead's name", required: true }],
   },
+  { name: "infocall", description: "Mark who showed up to the Sunday Zoom info call", type: 1 },
   {
     name: "scoreboard", description: "Recruiting funnel, by recruiter and by ad", type: 1,
     options: [{ type: 4, name: "days", description: "How many days back (default 30)", required: false, min_value: 1, max_value: 365 }],

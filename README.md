@@ -7,6 +7,8 @@ Discord bot for the CVO recruiting pipeline, hosted on Netlify Functions.
 - `/api/register-commands` — registers `/myleads`, `/lead`, `/scoreboard` on the CVO server
 - `reassign` (scheduled, every 5 min) — hands unclaimed Hot/Warm leads to the next recruiter after 15 minutes, 8am–10pm ET
 - `/api/unsubscribe`, `/api/info-call.ics` — links in the nurture emails (proxied from pinkteamfiber.com)
+- `/api/lead-reply` — pinkteamfiber.com's inbound mail function sends every received email's Resend ID here; replies from leads get posted in Discord (YES pings @Recruiter, STOP cancels the emails) and logged in Airtable (`Notes`, `Replied At`)
+- `/infocall` — during or after the Sunday call, tick who showed up; sets `Attended Call` and posts each attendee for follow-up
 
 ## Nurture emails → Sunday Zoom info call
 Nurture leads, plus Cold leads from the website (rookies), get emailed into the weekly Zoom info call
@@ -14,6 +16,8 @@ Nurture leads, plus Cold leads from the website (rookies), get emailed into the 
 follow-up Monday. All of them are scheduled in Resend when the lead comes in. Airtable shows it in
 `Nurture`, `Info Call` and `Nurture Email IDs`. Unsubscribing, or marking the lead Dead or Hired, cancels
 the rest. Zoom link, times and wording are in `lib/config.mjs` and `lib/nurture.mjs`.
+
+Website rookies (Cold, Ad Name starting with "Website") are also posted to #nurture-leads so a recruiter can text them.
 
 To enroll a lead that came in before this existed, POST `{ "recordId": "rec…", "nurtureOnly": true }` to
 `/api/new-lead`. That sends the emails without posting the lead to Discord.

@@ -6,6 +6,7 @@ import {
   myLeads, searchLead, scoreboardEmbeds, channelUrl, isNurture,
 } from "../../lib/leads.mjs";
 import { getLead } from "../../lib/airtable.mjs";
+import { latestCall, attendancePicker, saveAttendance } from "../../lib/infocall.mjs";
 
 const ephemeral = (content, extra = {}) => json({ type: RESPONSE.MESSAGE, data: { content, flags: EPHEMERAL, allowed_mentions: { parse: [] }, ...extra } });
 
@@ -22,7 +23,7 @@ export default async (req, context) => {
   const isRecruiter = (member?.roles || []).includes(RECRUITER_ROLE_ID) || user.id === OWNER_USER_ID;
 
   try {
-    if (i.type === 2) return await handleCommand(i, user, context);
+    if (i.type === 2) return await handleCommand(i, user, isRecruiter, context);
     if (i.type === 3) return await handleComponent(i, user, isRecruiter, context);
     if (i.type === 5) return await handleModal(i, user, context);
   } catch (err) {
@@ -98,6 +99,29 @@ async function handleComponent(i, user, isRecruiter, context) {
     return json({ type: RESPONSE.DEFERRED_UPDATE });
   }
 
+  if (action === "attended") {
+    if (!isRecruiter) return ephemeral("Only people with the Recruiter role can mark attendance.");
+    const menu = i.message.components.flatMap((r) => r.components).find((c) => c.custom_id === i.data.custom_id);
+    const before = menu.options.map((o) => ({ value: o.value, default: Boolean(o.default) }));
+    const selected = i.data.values;
+    context.waitUntil((async () => {
+      const { added, removed } = await saveAttendance(before, selected);
+      const parts = [added && `${added} marked as attended and posted for follow-up`, removed && `${removed} unmarked`].filter(Boolean);
+      await interactionWebhook("POST", i.token, "", { content: parts.length ? `Saved: ${parts.join(", ")}.` : "No changes.", flags: EPHEMERAL });
+    })().catch(async (err) => {
+      console.error(err);
+      await interactionWebhook("POST", i.token, "", { content: "Couldn't save attendance — try again.", flags: EPHEMERAL });
+    }));
+    // Show the new picks as the saved state.
+    const components = i.message.components.map((r) => ({
+      ...r,
+      components: r.components.map((c) => c.custom_id !== i.data.custom_id ? c : {
+        ...c, options: c.options.map((o) => ({ ...o, default: selected.includes(o.value) })),
+      }),
+    }));
+    return json({ type: RESPONSE.UPDATE_MESSAGE, data: { content: i.message.content, components } });
+  }
+
   if (action === "note") {
     return json({
       type: RESPONSE.MODAL,
@@ -133,8 +157,19 @@ async function handleModal(i, user, context) {
 }
 
 // ---------- slash commands ----------
-async function handleCommand(i, user, context) {
+async function handleCommand(i, user, isRecruiter, context) {
   const name = i.data.name;
+
+  if (name === "infocall") {
+    if (!isRecruiter) return ephemeral("Only people with the Recruiter role can mark attendance.");
+    context.waitUntil((async () => {
+      const call = await latestCall();
+      await interactionWebhook("PATCH", i.token, "/messages/@original", call?.invitees.length
+        ? attendancePicker(call)
+        : { content: "No info call has started yet. Run this during or after Sunday's call." });
+    })().catch(console.error));
+    return json({ type: RESPONSE.DEFERRED_MESSAGE, data: { flags: EPHEMERAL } });
+  }
 
   if (name === "myleads") {
     context.waitUntil((async () => {
