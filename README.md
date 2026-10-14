@@ -15,7 +15,8 @@ follow-up Monday. All of them are scheduled in Resend when the lead comes in. Ai
 `Nurture`, `Info Call` and `Nurture Email IDs`. Unsubscribing, or marking the lead Dead or Hired, cancels
 the rest. Zoom link, times and wording are in `lib/config.mjs` and `lib/nurture.mjs`.
 
-To enroll a lead that came in before this existed, POST its record ID to `/api/new-lead` again.
+To enroll a lead that came in before this existed, POST `{ "recordId": "rec…", "nurtureOnly": true }` to
+`/api/new-lead`. That sends the emails without posting the lead to Discord.
 
 ## Environment variables (set in Netlify, never in code)
 - `DISCORD_BOT_TOKEN` — secret
