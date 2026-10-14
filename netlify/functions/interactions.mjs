@@ -6,6 +6,7 @@ import {
   myLeads, searchLead, scoreboardEmbeds, channelUrl, isNurture, returnToMorningPool, distributeOvernightLeads,
 } from "../../lib/leads.mjs";
 import { getPause, pauseActive, startPause, clearPause, resumeLabel } from "../../lib/pause.mjs";
+import { rotationReport } from "../../lib/rotation.mjs";
 import { getLead } from "../../lib/airtable.mjs";
 import { latestCall, attendancePicker, saveAttendance } from "../../lib/infocall.mjs";
 
@@ -169,6 +170,13 @@ async function handleModal(i, user, context) {
 // ---------- slash commands ----------
 async function handleCommand(i, user, isRecruiter, context) {
   const name = i.data.name;
+
+  if (name === "rotation") {
+    context.waitUntil((async () => {
+      await interactionWebhook("PATCH", i.token, "/messages/@original", { content: await rotationReport() });
+    })().catch(console.error));
+    return json({ type: RESPONSE.DEFERRED_MESSAGE, data: { flags: EPHEMERAL } });
+  }
 
   if (name === "pause") {
     if (!isRecruiter) return ephemeral("Only people with the Recruiter role can pause lead rotation.");

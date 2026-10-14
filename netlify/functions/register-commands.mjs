@@ -9,6 +9,7 @@ const COMMANDS = [
     options: [{ type: 3, name: "name", description: "Part of the lead's name", required: true }],
   },
   { name: "infocall", description: "Mark who showed up to the Sunday Zoom info call", type: 1 },
+  { name: "rotation", description: "Who gets the next lead, and how many each recruiter got today and this week", type: 1 },
   { name: "pause", description: "Pause lead rotation until 10 AM ET, then hand out the overnight leads", type: 1 },
   { name: "resume", description: "End the pause now and hand out the leads that came in", type: 1 },
   {

@@ -9,6 +9,7 @@ Discord bot for the CVO recruiting pipeline, hosted on Netlify Functions.
 - `/api/unsubscribe`, `/api/info-call.ics` — links in the nurture emails (proxied from pinkteamfiber.com)
 - `/api/lead-reply` — pinkteamfiber.com's inbound mail function sends every received email's Resend ID here; replies from leads get posted in Discord (YES pings @Recruiter, STOP cancels the emails) and logged in Airtable (`Notes`, `Replied At`)
 - `/infocall` — during or after the Sunday call, tick who showed up; sets `Attended Call` and posts each attendee for follow-up
+- `/rotation` — who gets the next lead, and each recruiter's new leads and hand-offs today and over 7 days. Rotation rules are in `lib/rotation.mjs`: a new lead goes to whoever has waited longest since their last new lead (hand-offs don't change that order); a hand-off goes to whoever has waited longest since any assignment.
 - `/pause` — stops lead rotation until 10 AM ET: new Hot/Warm leads post unassigned with no pings, Pass puts a lead back in the pile, and no 15-minute hand-offs. At 10 AM the `reassign` job deals them out round-robin (Hot first), gives leads already waiting a fresh 15 minutes, and posts one summary tagging each recruiter. `/resume` does that right away. State lives in the `bot-state` blob store (`pause`). It also turns on by itself every night at 11 PM ET (`AUTO_PAUSE_HOUR` in `lib/pause.mjs`), once per night, so a `/resume` during the night stays resumed until the next night.
 
 ## Nurture emails → Sunday Zoom info call
