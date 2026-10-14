@@ -19,6 +19,14 @@ the rest. Zoom link, times and wording are in `lib/config.mjs` and `lib/nurture.
 
 Website rookies (Cold, Ad Name starting with "Website") are also posted to #nurture-leads so a recruiter can text them.
 
+Also:
+- Facebook Hot/Warm leads get a "a recruiter will call or text you today" email the moment they come in.
+- `nurture-daily` (scheduled, 11 AM ET) emails three groups and posts a summary in #nurture-leads:
+  - leads still New with no contact logged 3–10 days after they came in get the full sequence
+  - no-shows (not ticked in `/infocall`) get one re-invite: Friday invite + Sunday reminder
+  - after that, a monthly check-in for the next call, up to 5 invites in total (`Info Call Invites`)
+- Anyone unsubscribed, marked Dead/Hired, or moved past New by a recruiter is skipped.
+
 To enroll a lead that came in before this existed, POST `{ "recordId": "rec…", "nurtureOnly": true }` to
 `/api/new-lead`. That sends the emails without posting the lead to Discord.
 
