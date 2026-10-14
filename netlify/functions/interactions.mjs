@@ -3,8 +3,9 @@ import { verifySignature, json, RESPONSE, EPHEMERAL, interactionWebhook, discord
 import { RECRUITER_ROLE_ID, OWNER_USER_ID, LEADS_CHANNEL_ID, STAGES } from "../../lib/config.mjs";
 import {
   claimLead, claimedCard, handOff, setStage, markDead, reopen, addNote, stageControls, lostReasonPicker,
-  myLeads, searchLead, scoreboardEmbeds, channelUrl, isNurture,
+  myLeads, searchLead, scoreboardEmbeds, channelUrl, isNurture, returnToMorningPool, distributeOvernightLeads,
 } from "../../lib/leads.mjs";
+import { getPause, pauseActive, startPause, clearPause, resumeLabel } from "../../lib/pause.mjs";
 import { getLead } from "../../lib/airtable.mjs";
 import { latestCall, attendancePicker, saveAttendance } from "../../lib/infocall.mjs";
 
@@ -63,6 +64,15 @@ async function handleComponent(i, user, isRecruiter, context) {
   if (action === "pass") {
     const rec = await getLead(recordId);
     if (rec.fields.Claimed) return ephemeral("That lead is already claimed.");
+    const pause = await getPause();
+    if (pauseActive(pause)) {
+      if (!rec.fields["Recruiter Discord ID"]) return ephemeral(`Nobody has this one yet. It gets handed out at ${resumeLabel(pause.until)}.`);
+      if (rec.fields["Recruiter Discord ID"] !== user.id && user.id !== OWNER_USER_ID) {
+        return ephemeral("Only the recruiter it's assigned to can pass it.");
+      }
+      context.waitUntil(returnToMorningPool(rec, pause.until).catch(console.error));
+      return ephemeral(`Rotation is paused, so it goes into the ${resumeLabel(pause.until)} hand-out.`);
+    }
     if (rec.fields["Recruiter Discord ID"] !== user.id && user.id !== OWNER_USER_ID) {
       return ephemeral("Only the recruiter it's assigned to can pass it.");
     }
@@ -159,6 +169,26 @@ async function handleModal(i, user, context) {
 // ---------- slash commands ----------
 async function handleCommand(i, user, isRecruiter, context) {
   const name = i.data.name;
+
+  if (name === "pause") {
+    if (!isRecruiter) return ephemeral("Only people with the Recruiter role can pause lead rotation.");
+    const current = await getPause();
+    if (pauseActive(current)) return ephemeral(`Already paused until ${resumeLabel(current.until)}. Use /resume to hand leads out now.`);
+    const until = await startPause(user.name);
+    context.waitUntil(discord("POST", `/channels/${LEADS_CHANNEL_ID}/messages`, {
+      content: `⏸️ **${user.name}** paused lead rotation until **${resumeLabel(until)}**. New Hot/Warm leads still post here, unassigned and with no pings. At ${resumeLabel(until)} they get handed out. \`/resume\` hands them out sooner.`,
+      allowed_mentions: { parse: [] },
+    }).catch(console.error));
+    return ephemeral(`Paused until ${resumeLabel(until)}.`);
+  }
+
+  if (name === "resume") {
+    if (!isRecruiter) return ephemeral("Only people with the Recruiter role can resume lead rotation.");
+    if (!(await getPause())) return ephemeral("Lead rotation isn't paused.");
+    await clearPause();
+    context.waitUntil(distributeOvernightLeads(`▶️ **${user.name}** resumed lead rotation.`).catch(console.error));
+    return ephemeral("Resumed. Handing out the leads that came in while it was paused.");
+  }
 
   if (name === "infocall") {
     if (!isRecruiter) return ephemeral("Only people with the Recruiter role can mark attendance.");
